@@ -30,8 +30,8 @@ class Foo
 end
 
 foo = Foo.new a: 1
-foo.runtime_call "bar", ["2"]
-foo.runtime_call "a", [] of String # => 3
+foo.runtime_call "bar", 2
+foo.runtime_call "a" # => 3
 ```
 
 ## Development

@@ -30,4 +30,12 @@ describe RuntimeCall do
     expect_raises { foo.runtime_call("bar", ["1", "too_many"]) }
     expect_raises { foo.runtime_call("bar", [] of String) } # too few
   end
+
+  it "test runtime calls with improved args" do
+    foo = Foo.new 1, "2"
+    foo.runtime_call("a").should eq 1
+    foo.runtime_call("bar", 1).should eq 2
+    foo.runtime_call("a").should eq 2
+    expect_raises { foo.runtime_call("bar", 1, 1) }
+  end
 end
