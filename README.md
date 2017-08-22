@@ -2,6 +2,10 @@
 
 Runtime calls in crystal
 
+Looks like "send" in Ruby.
+It is an internal list of functions defined to be called by their
+stringified name (`"bar"` call the function `bar(...)`).
+
 ## Installation
 
 Add this to your application's `shard.yml`:
@@ -23,7 +27,7 @@ class Foo
   end
 
   extend RuntimeCall
-  getter_runtime_call("a")
+  getter_runtime_call "a"
   define_runtime_call "bar", Int32 do |args|
     @a += args[0]
   end
