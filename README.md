@@ -30,13 +30,14 @@ class Foo
   def initialize(@a)
   end
 
-  extend RuntimeCall
-  getter_runtime_call "a"
-  define_runtime_call "bar", Int32 do |args|
-    @a += args[0]
-  end
-  define_runtime_call "bar2" do |args|
-    Foooo.new
+  RuntimeCall.extends do
+    getter_runtime_call "a"
+    define_runtime_call "bar", Int32 do |args|
+      @a += args[0]
+    end
+    define_runtime_call "bar2" do |args|
+      Foooo.new
+    end
   end
 end
 

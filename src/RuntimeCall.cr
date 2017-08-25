@@ -1,11 +1,6 @@
 require "./RuntimeCall/*"
 
 module RuntimeCall
-  alias Atom = Int64 | UInt64 | Int32 | UInt32 | Int16 | UInt16 | Int8 | UInt8 | Float64 | Float32 | String | Bool | Nil
-  alias Comp = Array(Comp) | Hash(Comp, Comp) | Atom
-  module IReturnable; end
-  alias Returnable = Comp | IReturnable
-
   class UndefinedCall < Exception
   end
 
@@ -16,17 +11,17 @@ module RuntimeCall
     alias RuntimeCallArg = String
     alias RuntimeCallArgsContainer = Array
     alias RuntimeCallArgs = RuntimeCallArgsContainer(RuntimeCallArg)
-    alias RuntimeCallReturn = Proc(self, RuntimeCallArgs, RuntimeCall::Returnable)
-    RUNTIME_CALLS__ = Hash(String, RuntimeCallReturn).new
+
+    RUNTIME_FUNCTIONS__ = [] of String
 
     # Read into the list of operators functions to call the right one.
-    def runtime_call(call : String, values : RuntimeCallArgs) : RuntimeCall::Returnable
+    def runtime_call(call : String, values : RuntimeCallArgs)
       call_proc = RUNTIME_CALLS__[call]?
       raise RuntimeCall::UndefinedCall.new %(No runtime call "#{call}" in (#{self.class})) if call_proc.nil?
       call_proc.call(self, values)
     end
 
-    def runtime_call(call : String, *values) : RuntimeCall::Returnable
+    def runtime_call(call : String, *values)
       call_proc = RUNTIME_CALLS__[call]?
       raise RuntimeCall::UndefinedCall.new %(No runtime call "#{call}" in (#{self.class})) if call_proc.nil?
       if values.size == 0
@@ -37,31 +32,35 @@ module RuntimeCall
     end
   end
 
+  # Define an operator compatible with __set_operators. It also check the type of the arguments.
+  macro define_runtime_call(_call, *_types, &_block)
+    def _rt_{{_call.id}}(values : RuntimeCallArgs)
+      {% if _types.empty? %}
+        RuntimeCall.__require_no_arguments({{_call}}, values)
+        {{yield}}
+      {% else %}
+        args = RuntimeCall.__require_arguments({{_call}}, values, {{*_types}})
+        {{yield args}}
+      {% end %}
+    end
+    {{RUNTIME_FUNCTIONS__ << _call}}
+  end
+
   # Defines getter with an unused parameter so it is compatible with the prototype used by __set_operators
   macro getter_runtime_call(*_calls)
     {% for _call in _calls %}
-      RUNTIME_CALLS__[{{_call}}] = -> (obj : self, args : RuntimeCallArgs) { obj._rt_{{_call.id}}(args) }
-
-      def _rt_{{_call.id}}(values : RuntimeCallArgs)
-        RuntimeCall.__require_no_arguments({{_call}}, values)
-        @{{_call.id}}.as(RuntimeCall::Returnable)
+      define_runtime_call({{_call}}) do
+        @{{_call.id}}
       end
     {% end %}
   end
 
-  # Define an operator compatible with __set_operators. It also check the type of the arguments.
-  macro define_runtime_call(_call, *_types, &_block)
-    RUNTIME_CALLS__[{{_call}}] = -> (obj : self, args : RuntimeCallArgs) { obj._rt_{{_call.id}}(args) }
-
-    def _rt_{{_call.id}}(values : RuntimeCallArgs)
-      {% if _types.empty? %}
-        RuntimeCall.__require_no_arguments({{_call}}, values)
-        {{yield}}.as(RuntimeCall::Returnable)
-      {% else %}
-        args = RuntimeCall.__require_arguments({{_call}}, values, {{*_types}})
-        {{yield args}}.as(RuntimeCall::Returnable)
+  macro finish_runtime_call
+    RUNTIME_CALLS__ = {
+      {% for _call in RUNTIME_FUNCTIONS__ %}
+        {{_call}} => -> (on : self, args : RuntimeCallArgs) { on._rt_{{_call.id}}(args) },
       {% end %}
-    end
+    }
   end
 
   # ```
@@ -88,5 +87,11 @@ module RuntimeCall
 
   macro __require_no_arguments(context, values)
     raise "Invalid argument count in (#{{{context}}}) with arguments (#{{{values}}})" unless {{values}}.size == 0
+  end
+
+  macro extends(&block)
+    extend RuntimeCall
+    {{yield}}
+    finish_runtime_call
   end
 end

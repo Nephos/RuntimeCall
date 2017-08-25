@@ -3,27 +3,27 @@ require "./spec_helper"
 class Foo
   getter a : Int32
   getter b : String
+
   def initialize(@a, @b)
   end
 
-  extend RuntimeCall
-  getter_runtime_call("a", "b")
-  define_runtime_call "bar", Int32 do |args|
-    @a += args[0]
-  end
-  define_runtime_call "bar2", String do |args|
-    @a += args[0] == "2" ? 2 : 0
-  end
-  define_runtime_call "hash" do
-    {"Hash" => 1.0}
-  end
+  RuntimeCall.extends do
+    getter_runtime_call("a", "b")
+    define_runtime_call "bar", Int32 do |args|
+      @a += args[0]
+    end
+    define_runtime_call "bar2", String do |args|
+      @a += args[0] == "2" ? 2 : 0
+    end
+    define_runtime_call "hash" do
+      {"Hash" => 1.0}
+    end
 
-  include RuntimeCall::IReturnable
-  define_runtime_call "self" do
-    self
+    define_runtime_call "self" do
+      self
+    end
   end
 end
-
 
 describe RuntimeCall do
   it "test runtime calls" do
@@ -36,8 +36,8 @@ describe RuntimeCall do
     foo.runtime_call("a", [] of String).should eq 4
     foo.runtime_call("bar2", ["X"]).should eq 4
     foo.runtime_call("a", [] of String).should eq 4
-    foo.runtime_call("self", [] of String).should eq foo
-    foo.runtime_call("hash", [] of String).should eq foo
+    foo.runtime_call("self", [] of String).should eq(foo)
+    foo.runtime_call("hash", [] of String).should eq({"Hash" => 1.0})
   end
 
   it "test runtime call errors" do
