@@ -14,6 +14,9 @@ class Foo
   define_runtime_call "bar2", String do |args|
     @a += args[0] == "2" ? 2 : 0
   end
+  define_runtime_call "hash" do
+    {"Hash" => 1.0}
+  end
 
   include RuntimeCall::IReturnable
   define_runtime_call "self" do
@@ -34,6 +37,7 @@ describe RuntimeCall do
     foo.runtime_call("bar2", ["X"]).should eq 4
     foo.runtime_call("a", [] of String).should eq 4
     foo.runtime_call("self", [] of String).should eq foo
+    foo.runtime_call("hash", [] of String).should eq foo
   end
 
   it "test runtime call errors" do
