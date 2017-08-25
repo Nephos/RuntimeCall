@@ -21,21 +21,29 @@ dependencies:
 ```crystal
 require "RuntimeCall"
 
+class Foooo
+  include RuntimeCall::IReturnable
+end
+
 class Foo
   getter a : Int32
   def initialize(@a)
   end
 
-  extend RuntimeCall
+  extend c
   getter_runtime_call "a"
   define_runtime_call "bar", Int32 do |args|
     @a += args[0]
+  end
+  define_runtime_call "bar2" do |args|
+    Foooo.new
   end
 end
 
 foo = Foo.new a: 1
 foo.runtime_call "bar", 2
 foo.runtime_call "a" # => 3
+foo.runtime_call "bar2" # => #<Foo:...>
 ```
 
 ## Development
