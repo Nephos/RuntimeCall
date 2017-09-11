@@ -14,7 +14,7 @@ module RuntimeCall
 
     RUNTIME_FUNCTIONS__ = [] of String
 
-    # Read into the list of operators functions to call the right one.
+    # Reads into the list of operators functions to call the right one.
     def runtime_call(call : String, values : RuntimeCallArgs)
       call_proc = RUNTIME_CALLS__[call]?
       raise RuntimeCall::UndefinedCall.new %(No runtime call "#{call}" in (#{self.class})) if call_proc.nil?
@@ -30,37 +30,37 @@ module RuntimeCall
         call_proc.call self, Array(String).new(values.size) { |i| values[i].to_s }
       end
     end
-  end
 
-  # Define an operator compatible with __set_operators. It also check the type of the arguments.
-  macro define_runtime_call(_call, *_types, &_block)
-    def _rt_{{_call.id}}(values : RuntimeCallArgs)
-      {% if _types.empty? %}
-        RuntimeCall.__require_no_arguments({{_call}}, values)
-        {{yield}}
-      {% else %}
-        args = RuntimeCall.__require_arguments({{_call}}, values, {{*_types}})
-        {{yield args}}
-      {% end %}
-    end
-    {{RUNTIME_FUNCTIONS__ << _call}}
-  end
-
-  # Defines getter with an unused parameter so it is compatible with the prototype used by __set_operators
-  macro getter_runtime_call(*_calls)
-    {% for _call in _calls %}
-      define_runtime_call({{_call}}) do
-        @{{_call.id}}
+    # Defines an operator compatible with __set_operators. It also checks the type of the arguments.
+    macro define_runtime_call(_call, *_types, &_block)
+      def _rt_\{{_call.id}}(values : RuntimeCallArgs)
+        \{% if _types.empty? %}
+          RuntimeCall.__require_no_arguments(\{{_call}}, values)
+          \{{yield}}
+        \{% else %}
+          args = RuntimeCall.__require_arguments(\{{_call}}, values, \{{*_types}})
+          \{{yield args}}
+        \{% end %}
       end
-    {% end %}
-  end
+      \{{RUNTIME_FUNCTIONS__ << _call}}
+    end
 
-  macro finish_runtime_call
-    RUNTIME_CALLS__ = {
-      {% for _call in RUNTIME_FUNCTIONS__ %}
-        {{_call}} => -> (on : self, args : RuntimeCallArgs) { on._rt_{{_call.id}}(args) },
-      {% end %}
-    }
+    # Defines getter with an unused parameter so it is compatible with the prototype used by __set_operators
+    macro getter_runtime_call(*_calls)
+      \{% for _call in _calls %}
+        define_runtime_call(\{{_call}}) do
+          @\{{_call.id}}
+        end
+      \{% end %}
+    end
+
+    macro finish_runtime_call()
+      RUNTIME_CALLS__ = {
+        \{% for _call in RUNTIME_FUNCTIONS__ %}
+          \{{_call}} => -> (on : self, args : RuntimeCallArgs) { on._rt_\{{_call.id}}(args) },
+        \{% end %}
+      }
+    end
   end
 
   # ```
