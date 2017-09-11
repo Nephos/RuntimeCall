@@ -36,10 +36,10 @@ module RuntimeCall
       def _rt_\{{_call.id}}(values : RuntimeCallArgs)
         \{% if _types.empty? %}
           RuntimeCall.__require_no_arguments(\{{_call}}, values)
-          {{yield}}
+          \{{yield}}
         \{% else %}
           args = RuntimeCall.__require_arguments(\{{_call}}, values, \{{*_types}})
-          {{yield args}}
+          \{{yield args}}
         \{% end %}
       end
       \{{RUNTIME_FUNCTIONS__ << _call}}
