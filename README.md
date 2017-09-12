@@ -22,11 +22,10 @@ dependencies:
 require "RuntimeCall"
 
 class Foooo
-  include RuntimeCall::IReturnable
 end
 
 class Foo
-  getter a : Int32
+  @a : Int32
   def initialize(@a)
   end
 
